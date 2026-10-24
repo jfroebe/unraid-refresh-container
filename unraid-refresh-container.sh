@@ -1,5 +1,21 @@
 #!/bin/bash
 # shellcheck disable=SC2016 # Embedded PHP dollar signs must not expand in Bash.
+# Copyright (C) 2026 Jason Froebe
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. See the LICENSE file in this repository.
+# If not, see <https://www.gnu.org/licenses/>.
+#
 # Version 2.0.0 — persistent Unraid container update and image rollback.
 # Install: /boot/config/scripts/unraid-refresh-container.sh
 # Invoke with bash because the Unraid flash drive may be mounted noexec.
