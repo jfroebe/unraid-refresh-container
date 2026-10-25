@@ -38,7 +38,7 @@ umask 077
 # Help must work before root, Docker, or Unraid availability checks, allowing an
 # administrator to inspect the interface without starting an update.
 usage() {
-  cat << 'HELP'
+  cat <<'HELP'
 Usage:
   bash unraid-refresh-container.sh CONTAINER [TIMEOUT_SECONDS]
   bash unraid-refresh-container.sh --rollback CONTAINER [TIMEOUT_SECONDS] [BACKUP_ID]
@@ -173,7 +173,7 @@ updater=/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_containe
 rebuilder=/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container
 [[ -f $updater && -f $rebuilder ]] || fail 'Required Unraid update/rebuild helpers were not found.'
 for program in docker flock gzip mountpoint findmnt; do
-  command -v "$program" > /dev/null || fail "Required command is missing: $program"
+  command -v "$program" >/dev/null || fail "Required command is missing: $program"
 done
 
 # Local Docker connection
@@ -190,12 +190,12 @@ unset DOCKER_CONTEXT DOCKER_TLS_VERIFY DOCKER_CERT_PATH
 # the same container; it does not serialize unrelated Unraid web-interface actions.
 # A leftover lock file is harmless: ownership of the advisory lock is what matters.
 
-exec 9> "/var/lock/unraid-refresh-container-${container}.lock"
+exec 9>"/var/lock/unraid-refresh-container-${container}.lock"
 flock -n 9 || fail "Another operation on $container is already running."
 mkdir -p "$state_dir"
 # Some storage backends cannot apply Unix modes. The restrictive umask still
 # governs creation where supported; administrators must secure the storage share.
-chmod 700 "$state_dir" 2> /dev/null || true
+chmod 700 "$state_dir" 2>/dev/null || true
 filesystem=$(findmnt -n -o FSTYPE -T "$state_dir") || fail 'Cannot identify backup storage.'
 case "$filesystem" in
   tmpfs | ramfs | rootfs | overlay)
@@ -281,7 +281,7 @@ info=$(/usr/bin/php -r '
 
     echo implode("\n", $matches[0]);
 ' "$container") || fail 'Expected exactly one saved Unraid template with a Repository.'
-mapfile -t fields <<< "$info"
+mapfile -t fields <<<"$info"
 template=${fields[0]}
 image=${fields[1]}
 tailscale=${fields[2]:-false}
@@ -359,7 +359,7 @@ if [[ $mode == update ]]; then
     printf '\nSaving previous image to %s/image.tar.gz ...\n' "$snapshot"
     # Publish the archive only after the whole export/compression pipeline succeeds.
     # The .partial suffix prevents incomplete output looking like a finished archive.
-    if ! docker image save "$tag" | gzip -1 > "$snapshot/image.tar.gz.partial"; then
+    if ! docker image save "$tag" | gzip -1 >"$snapshot/image.tar.gz.partial"; then
       rm -f -- "$snapshot/image.tar.gz.partial"
       fail 'Image backup failed; existing container was not stopped.'
     fi
@@ -384,7 +384,7 @@ if [[ $mode == update ]]; then
         )
             exit(1);
     ' "$snapshot/metadata.json" "$container" "$previous" "$tag" "$image"
-    printf '%s\n' "$backup_id" > "$state_dir/latest.partial"
+    printf '%s\n' "$backup_id" >"$state_dir/latest.partial"
     mv -- "$state_dir/latest.partial" "$state_dir/latest"
     printf 'Saved rollback point: %s\n' "$backup_id"
   else
@@ -431,7 +431,7 @@ else
   # Load before stopping anything. Docker validates the archive contents; then
   # verify its exact image ID before using it, even after Docker image cleanup.
   printf 'Loading saved image: %s\n' "$backup_id"
-  docker image load -i "$snapshot/image.tar.gz" > /dev/null ||
+  docker image load -i "$snapshot/image.tar.gz" >/dev/null ||
     fail 'Saved image could not be loaded; current container was not stopped.'
   actual=$(docker image inspect --format '{{.Id}}' "$expected") ||
     fail 'Archive does not contain the expected old image.'
@@ -498,7 +498,7 @@ fi
 actual=$(docker inspect --type container --format '{{.Image}}' "$container") ||
   fail 'Cannot inspect recreated container.'
 [[ $actual == "$expected" ]] || fail 'Container is not using the expected image; backup is retained.'
-docker start "$container" > /dev/null || fail 'Recreated container could not be started; backup is retained.'
+docker start "$container" >/dev/null || fail 'Recreated container could not be started; backup is retained.'
 ready ||
   fail "Readiness failed. Inspect: docker logs --tail 50 $container ; rollback: bash $0 --rollback $container"
 printf '\nSUCCESS: %s completed for %s.\nImage: %s\nImage ID: %s\n' "$mode" "$container" "$image" "$expected"
