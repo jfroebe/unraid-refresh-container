@@ -1,0 +1,51 @@
+name: Bash static validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bash-static:
+    name: Bash syntax, ShellCheck and shfmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install deterministic linters
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt
+
+      - name: Discover and validate every Bash script
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(git ls-files -z)
+          declare -a scripts=()
+          for file in "${files[@]}"; do
+            [[ -f "$file" ]] || continue
+            if [[ "$file" == *.sh ]]; then
+              scripts+=("$file")
+              continue
+            fi
+            IFS= read -r first_line < "$file" || true
+            if [[ "$first_line" =~ ^#!.*(/|[[:space:]])bash([[:space:]]|$) ]]; then
+              scripts+=("$file")
+            fi
+          done
+          if (("${#scripts[@]}" == 0)); then
+            echo 'No Bash scripts found.'
+            exit 0
+          fi
+          printf 'Validating %d Bash script(s):\n' "${#scripts[@]}"
+          printf '  %s\n' "${scripts[@]}"
+          for script in "${scripts[@]}"; do
+            bash -n "$script"
+          done
+          shellcheck --severity=style -- "${scripts[@]}"
+          shfmt -d -ln bash -i 2 -ci -- "${scripts[@]}"
